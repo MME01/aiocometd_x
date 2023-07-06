@@ -235,8 +235,7 @@ class Client:  # pylint: disable=too-many-instance-attributes
                                      auth=self.auth,
                                      json_dumps=self._json_dumps,
                                      json_loads=self._json_loads,
-                                     http_session=http_session,
-                                     loop=self._loop)
+                                     http_session=http_session)
 
         try:
             response = await transport.handshake(self._connection_types)
@@ -271,8 +270,8 @@ class Client:  # pylint: disable=too-many-instance-attributes
                     json_dumps=self._json_dumps,
                     json_loads=self._json_loads,
                     reconnect_advice=advice,
-                    http_session=http_session,
-                    loop=self._loop)
+                    http_session=http_session
+                )
             return transport
         except Exception:
             await transport.close()
@@ -486,31 +485,27 @@ class Client:  # pylint: disable=too-many-instance-attributes
         # task waiting on connection timeout
         if connection_timeout:
             timeout_task = asyncio.ensure_future(
-                self._wait_connection_timeout(connection_timeout),
-                loop=self._loop
+                self._wait_connection_timeout(connection_timeout)
             )
             tasks.append(timeout_task)
 
         assert self._incoming_queue is not None
         # task waiting on incoming messages
-        get_task = asyncio.ensure_future(self._incoming_queue.get(),
-                                         loop=self._loop)
+        get_task = asyncio.ensure_future(self._incoming_queue.get())
         tasks.append(get_task)
 
         assert self._transport is not None
         # task waiting on server side disconnect
         server_disconnected_task = asyncio.ensure_future(
             self._transport.wait_for_state(
-                TransportState.SERVER_DISCONNECTED),
-            loop=self._loop
+                TransportState.SERVER_DISCONNECTED)
         )
         tasks.append(server_disconnected_task)
 
         try:
             done, pending = await asyncio.wait(
                 tasks,
-                return_when=asyncio.FIRST_COMPLETED,
-                loop=self._loop)
+                return_when=asyncio.FIRST_COMPLETED)
 
             # cancel all pending tasks
             for task in pending:
@@ -546,7 +541,7 @@ class Client:  # pylint: disable=too-many-instance-attributes
             try:
                 await asyncio.wait_for(
                     self._transport.wait_for_state(TransportState.CONNECTED),
-                    timeout, loop=self._loop
+                    timeout
                 )
             except asyncio.TimeoutError:
                 break
